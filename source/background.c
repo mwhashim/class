@@ -429,17 +429,17 @@ int background_functions(
       short ROOTSTAT = _TRUE_;
       double rE0 = 1.0, rE1;
       
-      //printf("beta for this model is %.8f\n", beta(pba));
       while(ROOTSTAT == _TRUE_){
-           rE1 = sqrt( (rho_tot - pba->K/a/a) +  pow(pba->H0, 2) * (pow(rE0, 2) - (fE(pba, rE0) - EdfE(pba, rE0))/(6.0 * pow(pba->H0, 2))) );
-
+             //rE1 = sqrt( (rho_tot - pba->K/a/a) +  pow(pba->H0, 2) * (pow(rE0, 2) - (fE(pba, rE0) - EdfE(pba, rE0))/(6.0 * pow(pba->H0, 2))) );
+             //rE1 = sqrt( pow(pba->H0, -2.0) * rho_m  +   (pow(rE0, 2) - (fE(pba, rE0) - EdfE(pba, rE0))/(6.0 * pow(pba->H0, 2))) );
+             rE1 = sqrt( (rho_tot - pba->K/a/a) * pow(pba->H0, -2.0) +  pba->Omega0_T  * yE(pba, rE0) );
            if (fabs(rE1-rE0) <= iterror){
                //printf("beta is %0.8f, OmegaT is %0.4f,  Diff is %0.8f at a = %0.20f and H0 is %0.8f \n", beta(pba), pba->Omega0_T, fabs(rE1-rE0), a_rel, pba->H0);
                ROOTSTAT  = _FALSE_;
            }
            rE0 = rE1;
            }
-          pvecback[pba->index_bg_H] = rE1;}
+          pvecback[pba->index_bg_H] = rE1 * pow(pba->H0, 1.0);}
       
   else{
         pvecback[pba->index_bg_H] = sqrt(rho_tot - pba->K/a/a);
@@ -2335,16 +2335,21 @@ double ddV_scf(
 
 /* Modified Gravity f(T) functions */
 //---- f(T) = T * exp(beta * T0/T)
-//double beta(struct background *pba){
-//    return 1.0/2.0 + gsl_sf_lambert_W0((1.0 - pba->Omega0_T)/(-2.0 * exp(1.0/2.0)));
-//}
-//double fE(struct background *pba, double rE){
-//    return -6.0 * pow(rE,2) * pow(pba->H0, 2)  * exp(beta(pba) * pow(rE, -2));
-//}
-//
-//double EdfE(struct background *pba, double rE){
-//    return 2.0 * fE(pba, rE) * (1.0 - beta(pba) * pow(rE, -2.0));
-//}
+double beta(struct background *pba){
+    return 1.0/2.0 + gsl_sf_lambert_W0((1.0 - pba->Omega0_T)/(-2.0 * exp(1.0/2.0)));
+}
+
+double yE(struct background *pba, double rE){
+    return (pow(rE, 2.0) - (pow(rE, 2.0) - 2.0 * beta(pba)) * exp(beta(pba) * pow(rE, -2.0)))/pba->Omega0_T;
+}
+
+double fE(struct background *pba, double rE){
+    return -6.0 * pow(rE,2) * pow(pba->H0, 2)  * exp(beta(pba) * pow(rE, -2));
+}
+
+double EdfE(struct background *pba, double rE){
+    return 2.0 * fE(pba, rE) * (1.0 - beta(pba) * pow(rE, -2.0));
+}
 
 //------- f(T) = T + alpha * (-T)^p
 //double beta(struct background *pba){
@@ -2359,12 +2364,13 @@ double ddV_scf(
 //}
 
 //------- f(T) = T + alpha * T0(T0/T)^p
-double beta(struct background *pba){
-    return pba->Omega0_T/(1.0 + 2.0 * pba->p);
-}
-double fE(struct background *pba, double rE){
-    return -6.0 * pow(rE, 2.0) * pow(pba->H0, 2.0) - 6.0 * beta(pba) * pow(pba->H0, 2.0) * pow(rE, -2.0 * pba->p);
-}
-double EdfE(struct background *pba, double rE){
-    return -12.0 * pow(rE, 2.0) * pow(pba->H0, 2.0) + 12.0 * pba->p * beta(pba) * pow(pba->H0, 2.0) * pow(rE, -2.0 * pba->p);
-}
+//double beta(struct background *pba){
+//    return pba->Omega0_T/(1.0 + 2.0 * pba->p);
+//}
+//double fE(struct background *pba, double rE){
+//    return -6.0 * pow(rE, 2.0) * pow(pba->H0, 2.0) - 6.0 * beta(pba) * pow(pba->H0, 2.0) * pow(rE, -2.0 * pba->p);
+//}
+//double EdfE(struct background *pba, double rE){
+//    return -12.0 * pow(rE, 2.0) * pow(pba->H0, 2.0) + 12.0 * pba->p * beta(pba) * pow(pba->H0, 2.0) * pow(rE, -2.0 * pba->p);
+//}
+

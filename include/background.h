@@ -504,6 +504,7 @@ extern "C" {
                  );
   /** Modified gravity f(T) functions **/
   double beta(struct background *pba);
+  double yE(struct background *pba, double rE);
   double fE(struct background *pba, double rE);
   double EdfE(struct background *pba, double rE);
     
