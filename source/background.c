@@ -445,7 +445,11 @@ int background_functions(
         pvecback[pba->index_bg_H] = sqrt(rho_tot - pba->K/a/a);
         }
 
-
+  if (pba->has_MG == _TRUE_) {
+      pvecback[pba->index_bg_rho_MG] = pba->Omega0_T * yE(pba, pvecback[pba->index_bg_H] * pow(pba->H0, -1.0)) * pow(pba->H0,2);
+      rho_tot += pvecback[pba->index_bg_rho_MG];
+      p_tot -= pvecback[pba->index_bg_rho_MG];
+  }
 
   /** - compute derivative of H with respect to conformal time */
   pvecback[pba->index_bg_H_prime] = - (3./2.) * (rho_tot + p_tot) * a + pba->K/a;
@@ -873,6 +877,9 @@ int background_indices(
   /* - index for Lambda */
   class_define_index(pba->index_bg_rho_lambda,pba->has_lambda,index_bg,1);
 
+  /* - index for MG */
+  class_define_index(pba->index_bg_rho_MG,pba->has_MG,index_bg,1);
+    
   /* - index for fluid */
   class_define_index(pba->index_bg_rho_fld,pba->has_fld,index_bg,1);
   class_define_index(pba->index_bg_w_fld,pba->has_fld,index_bg,1);
@@ -2027,6 +2034,7 @@ int background_output_titles(struct background * pba,
     }
   }
   class_store_columntitle(titles,"(.)rho_lambda",pba->has_lambda);
+  class_store_columntitle(titles,"(.)rho_MG",pba->has_MG);
   class_store_columntitle(titles,"(.)rho_fld",pba->has_fld);
   class_store_columntitle(titles,"(.)w_fld",pba->has_fld);
   class_store_columntitle(titles,"(.)rho_ur",pba->has_ur);
@@ -2079,6 +2087,7 @@ int background_output_data(
       }
     }
     class_store_double(dataptr,pvecback[pba->index_bg_rho_lambda],pba->has_lambda,storeidx);
+    class_store_double(dataptr,pvecback[pba->index_bg_rho_MG],pba->has_MG,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_rho_fld],pba->has_fld,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_w_fld],pba->has_fld,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_rho_ur],pba->has_ur,storeidx);
