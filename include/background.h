@@ -180,6 +180,11 @@ struct background
   int index_bg_ddV_scf;       /**< scalar field potential second derivative V'' */
   int index_bg_rho_scf;       /**< scalar field energy density */
   int index_bg_p_scf;         /**< scalar field pressure */
+    
+  int index_bg_TT;            /**< T value */
+  int index_bg_fT;            /**< f(T) model */
+  int index_bg_dfT;           /**< f(T) derivative */
+  int index_bg_ddfT;          /**< f(T) second derivative */
 
   int index_bg_rho_ncdm1;     /**< density of first ncdm species (others contiguous) */
   int index_bg_p_ncdm1;       /**< pressure of first ncdm species (others contiguous) */
@@ -506,8 +511,10 @@ extern "C" {
   /** Modified gravity f(T) functions **/
   double beta(struct background *pba);
   double yE(struct background *pba, double rE);
-  double fE(struct background *pba, double rE);
-  double EdfE(struct background *pba, double rE);
+
+  double fT(struct background *pba, double TT);
+  double dfT(struct background *pba, double TT);
+  double ddfT(struct background *pba, double TT);
     
   /** Coupling between scalar field and matter **/
   double Q_scf(

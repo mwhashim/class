@@ -5104,16 +5104,19 @@ int perturb_einstein(
 
   /** - define local variables */
 
-  double k2,a,a2,a_prime_over_a;
+  double k2,a,a2,a_prime_over_a, HH, Hprime;
   double s2_squared;
   double shear_g = 0.;
+  double zeta;
 
   /** - define wavenumber and scale factor related quantities */
 
   k2 = k*k;
   a = ppw->pvecback[pba->index_bg_a];
   a2 = a * a;
+  HH = ppw->pvecback[pba->index_bg_H]*a;
   a_prime_over_a = ppw->pvecback[pba->index_bg_H]*a;
+  Hprime = ppw->pvecback[pba->index_bg_H_prime]*a + pow(HH,2);
   s2_squared = 1.-3.*pba->K/k2;
 
   /** - sum up perturbations from all species */
@@ -5140,13 +5143,22 @@ int perturb_einstein(
          more stable is we treat phi as a dynamical variable
          y[ppw->pv->index_pt_phi], which derivative is given by the
          second equation below (credits to Guido Walter Pettinari). */
+    if (pba->has_MG == _TRUE_) {
+        /* equation for zeta */
+        zeta = (3./k2) * (1.5/ppw->pvecback[pba->index_bg_dfT] * (a2/k2) * ppw->rho_plus_p_theta - HH * (Hprime - pow(HH,2)) * (12./a2 * ppw->pvecback[pba->index_bg_ddfT]/ppw->pvecback[pba->index_bg_dfT] + 1./pow(HH,2))* y[ppw->pv->index_pt_phi]);
+        /* equation for psi */
+        ppw->pvecmetric[ppw->index_mt_psi] = y[ppw->pv->index_pt_phi] - 4.5/ppw->pvecback[pba->index_bg_dfT] * (a2/k2) * ppw->rho_plus_p_shear - 12.* zeta * HH * (Hprime - pow(HH,2)) * ppw->pvecback[pba->index_bg_ddfT]/ppw->pvecback[pba->index_bg_dfT];
 
-      /* equation for psi */
-      ppw->pvecmetric[ppw->index_mt_psi] = y[ppw->pv->index_pt_phi] - 4.5 * (a2/k2) * ppw->rho_plus_p_shear;
+        /* equation for phi' */
+        ppw->pvecmetric[ppw->index_mt_phi_prime] = -a_prime_over_a * ppw->pvecmetric[ppw->index_mt_psi] + 1.5/ppw->pvecback[pba->index_bg_dfT] * (a2/k2) * ppw->rho_plus_p_theta - 12./a2 * ppw->pvecback[pba->index_bg_ddfT]/ppw->pvecback[pba->index_bg_dfT] * HH * (Hprime - pow(HH,2)) * y[ppw->pv->index_pt_phi];
+    }
+    else{
+        /* equation for psi */
+        ppw->pvecmetric[ppw->index_mt_psi] = y[ppw->pv->index_pt_phi] - 4.5 * (a2/k2) * ppw->rho_plus_p_shear;
 
-      /* equation for phi' */
-      ppw->pvecmetric[ppw->index_mt_phi_prime] = -a_prime_over_a * ppw->pvecmetric[ppw->index_mt_psi] + 1.5 * (a2/k2) * ppw->rho_plus_p_theta;
-
+        /* equation for phi' */
+        ppw->pvecmetric[ppw->index_mt_phi_prime] = -a_prime_over_a * ppw->pvecmetric[ppw->index_mt_psi] + 1.5 * (a2/k2) * ppw->rho_plus_p_theta;
+    }
       /* eventually, infer radiation streaming approximation for
          gamma and ur (this is exactly the right place to do it
          because the result depends on h_prime) */

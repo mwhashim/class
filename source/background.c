@@ -274,6 +274,8 @@ int background_functions(
   double a;
   /* scalar field quantities */
   double phi, phi_prime;
+  /* Torsion field */
+  double TT;
 
   /** - initialize local variables */
   a = pvecback_B[pba->index_bi_a];
@@ -329,7 +331,14 @@ int background_functions(
     p_tot += (1./3.)*pvecback[pba->index_bg_rho_dr];
     rho_r += pvecback[pba->index_bg_rho_dr];
   }
-
+  /* Modified f(T) gravity*/
+ if (pba->has_MG == _TRUE_) {
+     TT = -6.0 * pow(pvecback[pba->index_bg_H],2);
+     pvecback[pba->index_bg_TT] = TT;
+     pvecback[pba->index_bg_fT] = fT(pba,TT);
+     pvecback[pba->index_bg_dfT] = dfT(pba,TT);
+     pvecback[pba->index_bg_ddfT] = ddfT(pba,TT);
+ }
   /* Scalar field */
   if (pba->has_scf == _TRUE_) {
     phi = pvecback_B[pba->index_bi_phi_scf];
@@ -430,8 +439,6 @@ int background_functions(
       double rE0 = 1.0, rE1;
       
       while(ROOTSTAT == _TRUE_){
-             //rE1 = sqrt( (rho_tot - pba->K/a/a) +  pow(pba->H0, 2) * (pow(rE0, 2) - (fE(pba, rE0) - EdfE(pba, rE0))/(6.0 * pow(pba->H0, 2))) );
-             //rE1 = sqrt( pow(pba->H0, -2.0) * rho_m  +   (pow(rE0, 2) - (fE(pba, rE0) - EdfE(pba, rE0))/(6.0 * pow(pba->H0, 2))) );
              rE1 = sqrt( (rho_tot - pba->K/a/a) * pow(pba->H0, -2.0) +  pba->Omega0_T  * yE(pba, rE0) );
            if (fabs(rE1-rE0) <= iterror){
                //printf("beta is %0.8f, OmegaT is %0.4f,  Diff is %0.8f at a = %0.20f and H0 is %0.8f \n", beta(pba), pba->Omega0_T, fabs(rE1-rE0), a_rel, pba->H0);
@@ -452,8 +459,12 @@ int background_functions(
   }
 
   /** - compute derivative of H with respect to conformal time */
-  pvecback[pba->index_bg_H_prime] = - (3./2.) * (rho_tot + p_tot) * a + pba->K/a;
-
+     if (pba->has_MG == _TRUE_) {
+         pvecback[pba->index_bg_H_prime] = - (3./2.) * p_tot * a + pba->K/a - (3./2.) * pow(pvecback[pba->index_bg_H],2) * a;
+     }
+     else{
+         pvecback[pba->index_bg_H_prime] = - (3./2.) * (rho_tot + p_tot) * a + pba->K/a;
+     }
   /** - compute relativistic density to total density ratio */
   pvecback[pba->index_bg_Omega_r] = rho_r / rho_tot;
 
@@ -879,6 +890,10 @@ int background_indices(
 
   /* - index for MG */
   class_define_index(pba->index_bg_rho_MG,pba->has_MG,index_bg,1);
+  class_define_index(pba->index_bg_TT,pba->has_MG,index_bg,1);
+  class_define_index(pba->index_bg_fT,pba->has_MG,index_bg,1);
+  class_define_index(pba->index_bg_dfT,pba->has_MG,index_bg,1);
+  class_define_index(pba->index_bg_ddfT,pba->has_MG,index_bg,1);
     
   /* - index for fluid */
   class_define_index(pba->index_bg_rho_fld,pba->has_fld,index_bg,1);
@@ -2352,12 +2367,16 @@ double yE(struct background *pba, double rE){
     return (pow(rE, 2.0) - (pow(rE, 2.0) - 2.0 * beta(pba)) * exp(beta(pba) * pow(rE, -2.0)))/pba->Omega0_T;
 }
 
-double fE(struct background *pba, double rE){
-    return -6.0 * pow(rE,2) * pow(pba->H0, 2)  * exp(beta(pba) * pow(rE, -2));
+double fT(struct background *pba, double TT){
+    return TT * exp(beta(pba) * -6.0 * pow(pba->H0,2)/TT);
 }
 
-double EdfE(struct background *pba, double rE){
-    return 2.0 * fE(pba, rE) * (1.0 - beta(pba) * pow(rE, -2.0));
+double dfT(struct background *pba, double TT){
+    return (TT-beta(pba)* -6.0 * pow(pba->H0,2))/pow(TT,2) * fT(pba,TT);
+}
+
+double ddfT(struct background *pba, double TT){
+    return pow(beta(pba),2) * pow(-6.0 * pow(pba->H0,2),2)/pow(TT,4) * fT(pba,TT);
 }
 
 //------- f(T) = T + alpha * (-T)^p
